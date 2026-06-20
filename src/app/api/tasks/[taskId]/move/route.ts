@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateGitHubIssue } from "@/lib/github";
 
 // PATCH /api/tasks/[taskId]/move
 // Body: { toColumnId: string, position: number }
@@ -18,7 +19,9 @@ export async function PATCH(
 
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    include: { column: { select: { boardId: true } } },
+    include: {
+      column: { select: { boardId: true } },
+    },
   });
 
   if (!task) {
@@ -63,6 +66,45 @@ export async function PATCH(
       payload: { from: fromColumnId, to: toColumnId, position },
     },
   });
+
+  // ── Two-way GitHub sync ────────────────────────────────────────────────────
+  // If this task is linked to a GitHub Issue, sync the state change.
+  if (task.githubIssueNumber) {
+    const board = await prisma.board.findFirst({
+      where: { id: task.column.boardId, githubOwner: { not: null } },
+      select: { githubOwner: true, githubRepo: true },
+    });
+
+    if (board?.githubOwner && board?.githubRepo) {
+      const destColumn = await prisma.column.findUnique({
+        where: { id: toColumnId },
+        select: { name: true },
+      });
+
+      const isDone = /done|complete|closed|shipped/i.test(destColumn?.name ?? "");
+      const wasUndone = /done|complete|closed|shipped/i.test(
+        (await prisma.column.findUnique({ where: { id: fromColumnId }, select: { name: true } }))?.name ?? ""
+      );
+
+      // Only call GitHub API when state actually changes
+      if (isDone || wasUndone) {
+        await updateGitHubIssue(
+          session.user.id,
+          board.githubOwner,
+          board.githubRepo,
+          task.githubIssueNumber,
+          { state: isDone ? "closed" : "open" }
+        ).catch(() => {
+          // Don't fail the move if GitHub sync fails
+        });
+
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { syncStatus: "SYNCED", lastSyncedAt: new Date() },
+        });
+      }
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

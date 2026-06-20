@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateGitHubIssue } from "@/lib/github";
 
 export async function PATCH(
   request: Request,
@@ -47,6 +48,34 @@ export async function PATCH(
         payload: body,
       },
     });
+
+    // Two-way GitHub sync: push title/description changes back to the Issue
+    if (task.githubIssueNumber && (body.title !== undefined || body.description !== undefined)) {
+      const board = await prisma.board.findFirst({
+        where: { id: column.boardId, githubOwner: { not: null } },
+        select: { githubOwner: true, githubRepo: true },
+      });
+
+      if (board?.githubOwner && board?.githubRepo) {
+        await updateGitHubIssue(
+          session.user.id,
+          board.githubOwner,
+          board.githubRepo,
+          task.githubIssueNumber,
+          {
+            ...(body.title !== undefined && { title: body.title }),
+            ...(body.description !== undefined && { body: body.description ?? "" }),
+          }
+        ).catch(() => {
+          // Don't fail the update if GitHub sync fails
+        });
+
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { syncStatus: "SYNCED", lastSyncedAt: new Date() },
+        });
+      }
+    }
   }
 
   return NextResponse.json(task);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getOctokitForUser } from "@/lib/github";
 
 // PATCH /api/boards/[boardId]/github/connect
 // Body: { owner: string, repo: string, repoId: string } | { disconnect: true }
@@ -50,6 +51,30 @@ export async function PATCH(
       payload: { owner, repo },
     },
   });
+
+  // Register a webhook on the repo so GitHub events flow back to our board
+  const webhookUrl = `${process.env.NEXTAUTH_URL}/api/github/webhook`;
+  const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+
+  if (webhookSecret) {
+    try {
+      const octokit = await getOctokitForUser(session.user.id);
+      await octokit.repos.createWebhook({
+        owner,
+        repo,
+        config: {
+          url: webhookUrl,
+          content_type: "json",
+          secret: webhookSecret,
+        },
+        events: ["issues"],
+        active: true,
+      });
+    } catch {
+      // Webhook registration failing shouldn't block the connection
+      // (e.g. user may not have admin access to the repo)
+    }
+  }
 
   return NextResponse.json(updated);
 }
