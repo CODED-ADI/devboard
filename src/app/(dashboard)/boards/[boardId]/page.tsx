@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BoardCanvas } from "@/components/features/board/board-canvas";
+import { BoardHeader } from "@/components/features/board/board-header";
 import type { Metadata } from "next";
 
 interface BoardPageProps {
@@ -49,24 +50,16 @@ export default async function BoardPage({ params }: BoardPageProps) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Board header */}
-      <div className="flex items-center gap-3 border-b border-slate-800 px-6 py-4">
-        <div
-          className="h-3 w-3 rounded-full flex-shrink-0"
-          style={{ backgroundColor: board.color }}
-        />
-        <h1 className="text-lg font-semibold text-white">{board.name}</h1>
-        {board.description && (
-          <span className="text-sm text-slate-400">{board.description}</span>
-        )}
-        {board.githubRepo && (
-          <span className="ml-auto text-xs text-slate-500">
-            {board.githubOwner}/{board.githubRepo}
-          </span>
-        )}
-      </div>
+      <BoardHeader
+        boardId={board.id}
+        name={board.name}
+        color={board.color}
+        description={board.description}
+        githubOwner={board.githubOwner}
+        githubRepo={board.githubRepo}
+        lastSyncedAt={board.lastSyncedAt}
+      />
 
-      {/* Kanban canvas — client component with dnd-kit */}
       <div className="flex-1 overflow-hidden">
         <BoardCanvas initialBoard={board} />
       </div>
