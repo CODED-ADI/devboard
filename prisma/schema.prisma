@@ -1,0 +1,317 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// NextAuth.js required models
+// ─────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────
+// User
+// ─────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  githubUsername String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  memberships     WorkspaceMember[]
+  ownedWorkspaces Workspace[]
+  assignedTasks   Task[]          @relation("TaskAssignee")
+  createdTasks    Task[]          @relation("TaskCreator")
+  activities      BoardActivity[]
+}
+
+// ─────────────────────────────────────────────
+// Workspace
+// ─────────────────────────────────────────────
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  avatarUrl   String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User              @relation(fields: [ownerId], references: [id])
+  members WorkspaceMember[]
+  boards  Board[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// ─────────────────────────────────────────────
+// Board
+// ─────────────────────────────────────────────
+
+model Board {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  color       String   @default("#6366f1")
+  isArchived  Boolean  @default(false)
+
+  // Optional GitHub repo link
+  githubRepoId  String?
+  githubOwner   String?
+  githubRepo    String?
+  lastSyncedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  columns    Column[]
+  labels     Label[]
+  activities BoardActivity[]
+
+  @@index([workspaceId])
+  @@index([githubRepoId])
+}
+
+// ─────────────────────────────────────────────
+// Column
+// ─────────────────────────────────────────────
+
+model Column {
+  id        String   @id @default(cuid())
+  name      String
+  boardId   String
+  position  Int
+  color     String?
+  taskLimit Int?     // WIP limit; null = unlimited
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@unique([boardId, position])
+  @@index([boardId])
+}
+
+// ─────────────────────────────────────────────
+// Task / Issue
+// ─────────────────────────────────────────────
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?    @db.Text
+  columnId    String
+  position    Int
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+
+  // GitHub Issue sync
+  githubIssueNumber Int?
+  githubIssueNodeId String?
+  githubIssueUrl    String?
+  lastSyncedAt      DateTime?
+  syncStatus        SyncStatus @default(UNSYNCED)
+
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  assigneeId String?
+  creatorId  String
+
+  column     Column      @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignee   User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator    User        @relation("TaskCreator", fields: [creatorId], references: [id])
+  labels     TaskLabel[]
+  activities BoardActivity[]
+
+  @@index([columnId])
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([githubIssueNumber])
+}
+
+enum Priority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+  NONE
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum SyncStatus {
+  UNSYNCED
+  SYNCED
+  PENDING
+  CONFLICT
+}
+
+// ─────────────────────────────────────────────
+// Labels
+// ─────────────────────────────────────────────
+
+model Label {
+  id            String @id @default(cuid())
+  name          String
+  color         String
+  boardId       String
+  githubLabelId String?
+
+  board Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks TaskLabel[]
+
+  @@unique([boardId, name])
+  @@index([boardId])
+}
+
+model TaskLabel {
+  taskId  String
+  labelId String
+
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+  @@index([taskId])
+  @@index([labelId])
+}
+
+// ─────────────────────────────────────────────
+// Event Sourcing: immutable activity log
+// Never UPDATE rows here — only INSERT.
+// ─────────────────────────────────────────────
+
+model BoardActivity {
+  id        String        @id @default(cuid())
+  boardId   String
+  taskId    String?
+  actorId   String
+
+  eventType ActivityEvent
+
+  // Full before/after diff, e.g. {"from":{"columnId":"col_a"},"to":{"columnId":"col_b"}}
+  payload   Json          @default("{}")
+  metadata  Json          @default("{}")
+
+  occurredAt DateTime @default(now())
+
+  board Board  @relation(fields: [boardId], references: [id])
+  task  Task?  @relation(fields: [taskId], references: [id])
+  actor User   @relation(fields: [actorId], references: [id])
+
+  @@index([boardId])
+  @@index([taskId])
+  @@index([actorId])
+  @@index([occurredAt])
+}
+
+enum ActivityEvent {
+  BOARD_CREATED
+  BOARD_UPDATED
+  BOARD_ARCHIVED
+
+  COLUMN_CREATED
+  COLUMN_UPDATED
+  COLUMN_DELETED
+  COLUMN_REORDERED
+
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_DELETED
+  TASK_MOVED
+  TASK_REORDERED
+  TASK_ASSIGNED
+  TASK_UNASSIGNED
+  TASK_LABEL_ADDED
+  TASK_LABEL_REMOVED
+  TASK_COMPLETED
+  TASK_REOPENED
+
+  GITHUB_ISSUE_LINKED
+  GITHUB_ISSUE_SYNCED
+  GITHUB_SYNC_CONFLICT
+}
