@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
@@ -52,6 +53,7 @@ export function BoardCanvas({ initialBoard }: BoardCanvasProps) {
   // Add column inline form
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
+  const router = useRouter();
 
   // Mutations
   const createTask = useCreateTask(activeBoard.id);
@@ -184,8 +186,7 @@ export function BoardCanvas({ initialBoard }: BoardCanvasProps) {
     });
     setNewColumnName("");
     setShowAddColumn(false);
-    // Refetch via query invalidation is handled server-side; reload for now
-    window.location.reload();
+    router.refresh();
   };
 
   return (

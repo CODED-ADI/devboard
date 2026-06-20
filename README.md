@@ -30,20 +30,18 @@ DevBoard syncs your GitHub Issues directly into a Kanban board. Move a card, the
 
 ## Features
 
-### Core MVP
-- **GitHub OAuth** — sign in with your GitHub account
+- **GitHub OAuth** — sign in with your GitHub account, repos auto-loaded
 - **Repo-linked Boards** — connect any board to a GitHub repository
-- **Two-way Issue Sync** — cards reflect GitHub Issues and vice versa
-- **Drag and Drop** — smooth column and card reordering via dnd-kit
-- **Labels and Assignees** — pulled directly from GitHub
+- **Two-way Issue Sync** — import Issues as cards; moving a card to Done closes the Issue in GitHub; closing an Issue moves the card automatically
+- **GitHub Webhooks** — real-time: Issue closed/reopened/edited in GitHub instantly updates the board
+- **Drag and Drop** — smooth column and card reordering via `@dnd-kit`
+- **Optimistic UI** — board updates instantly, server confirms in background
+- **Command Palette** — `Cmd+K` to search boards, navigate, create, sign out
+- **Analytics Tab** — area chart of board activity over 14 days, powered by the immutable event log
+- **WIP Limits** — per-column task limits with visual warnings
+- **Event Sourcing** — every state change is an append-only immutable `BoardActivity` log
+- **Settings Page** — profile, account info, keyboard shortcuts reference
 - **Dark UI** — built for developers, not product managers
-
-### Advanced (In Progress)
-- **Event Sourcing** — every state change is an immutable log entry
-- **Optimistic UI** — instant feedback before server confirms
-- **Activity Feed** — full board history per workspace
-- **Sprint Velocity** — Recharts-powered burndown charts
-- **Command Palette** — Cmd+K for power users
 
 ---
 
