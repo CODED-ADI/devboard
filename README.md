@@ -6,6 +6,7 @@
 
 ### GitHub-Integrated Kanban for Developers
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-devboard--mu--eight.vercel.app-6366f1?style=flat-square&logo=vercel&logoColor=white)](https://devboard-mu-eight.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js%2016-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
@@ -13,7 +14,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://prisma.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
-**Built by [HEX](https://github.com/CODED-ADI)**
+**Built by [HEX](https://github.com/CODED-ADI) &nbsp;·&nbsp; [Live Demo →](https://devboard-mu-eight.vercel.app)**
 
 </div>
 
