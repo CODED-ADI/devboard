@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { BoardsHeader } from "@/components/features/board/boards-header";
 
 export const metadata: Metadata = {
   title: "Boards",
@@ -47,20 +47,11 @@ export default async function BoardsPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-auto p-8">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Boards</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            {boards.length} board{boards.length !== 1 ? "s" : ""} in{" "}
-            {workspace.name}
-          </p>
-        </div>
-        <Button className="gap-2 bg-indigo-500 hover:bg-indigo-600">
-          <Plus className="h-4 w-4" />
-          New Board
-        </Button>
-      </div>
+      <BoardsHeader
+        boardCount={boards.length}
+        workspaceName={workspace.name}
+        workspaceId={workspace.id}
+      />
 
       {/* Board grid */}
       {boards.length === 0 ? (
@@ -76,10 +67,9 @@ export default async function BoardsPage() {
               Create your first board to start tracking work
             </p>
           </div>
-          <Button className="gap-2 bg-indigo-500 hover:bg-indigo-600">
-            <Plus className="h-4 w-4" />
-            Create your first board
-          </Button>
+          <p className="text-sm text-slate-500">
+            Click <strong className="text-slate-300">New Board</strong> above to get started
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

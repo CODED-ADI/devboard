@@ -27,7 +27,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
   const pathname = usePathname();
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delay={0}>
       <nav className="flex w-14 flex-col items-center gap-3 border-r border-slate-800 bg-slate-950 py-4">
         {/* Logo */}
         <Link
@@ -43,18 +43,20 @@ export function DashboardNav({ user }: DashboardNavProps) {
             const isActive = pathname.startsWith(href);
             return (
               <Tooltip key={href}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={href}
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-                      isActive
-                        ? "bg-indigo-500/20 text-indigo-400"
-                        : "text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </Link>
+                <TooltipTrigger
+                  render={
+                    <Link
+                      href={href}
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+                        isActive
+                          ? "bg-indigo-500/20 text-indigo-400"
+                          : "text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+                      )}
+                    />
+                  }
+                >
+                  <Icon className="h-4 w-4" />
                 </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
               </Tooltip>
@@ -65,13 +67,15 @@ export function DashboardNav({ user }: DashboardNavProps) {
         {/* User avatar + sign out */}
         <div className="flex flex-col items-center gap-2">
           <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+            <TooltipTrigger
+              render={
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200"
+                />
+              }
+            >
+              <LogOut className="h-4 w-4" />
             </TooltipTrigger>
             <TooltipContent side="right">Sign out</TooltipContent>
           </Tooltip>
